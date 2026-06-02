@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About — Kelly Modding Zone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f0e;
+    --bg2: #141714;
+    --bg3: #1b1f1b;
+    --border: #2a3029;
+    --green: #5aff7e;
+    --green-dim: #2dcc52;
+    --green-glow: rgba(90,255,126,0.12);
+    --text: #d4e0d5;
+    --text-dim: #7a9480;
+    --text-faint: #3d5040;
+    --card-bg: #161a16;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2.5rem;
+    height: 60px;
+    background: rgba(13,15,14,0.88);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: 0.08em;
+    color: var(--green);
+    text-decoration: none;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .nav-logo span { color: var(--text-dim); font-weight: 400; }
+  .nav-links { display: flex; gap: 0.25rem; list-style: none; }
+  .nav-links a {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: 0.4rem 0.9rem;
+    border-radius: 3px;
+    transition: color 0.2s, background 0.2s;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--green); background: var(--green-glow); }
+
+  /* PAGE HEADER */
+  .page-header {
+    position: relative;
+    z-index: 1;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 7rem 2.5rem 3.5rem;
+    overflow: hidden;
+  }
+  .page-header-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.2;
+    mask-image: radial-gradient(ellipse 80% 100% at 0% 50%, black 20%, transparent 80%);
+  }
+  .page-header-glow {
+    position: absolute;
+    top: -20%; right: 5%;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(90,255,126,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .page-header-inner {
+    position: relative;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--green);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .section-label::before { content: '//'; opacity: 0.5; }
+  h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 1;
+    color: #fff;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.01em;
+  }
+  .page-desc { font-size: 1rem; color: var(--text-dim); max-width: 480px; }
+
+  /* PAGE BODY */
+  .page-body {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 5rem 2.5rem 6rem;
+  }
+
+  /* ABOUT GRID */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: start;
+    margin-bottom: 5rem;
+  }
+
+  h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: #fff;
+    margin-bottom: 1.25rem;
+    letter-spacing: -0.01em;
+  }
+
+  .about-text p {
+    color: var(--text-dim);
+    margin-bottom: 1.2rem;
+    font-size: 0.97rem;
+  }
+  .about-text p strong { color: var(--text); font-weight: 600; }
+
+  /* TOOLS SECTION */
+  .tools-section {
+    padding-top: 4rem;
+    border-top: 1px solid var(--border);
+    margin-bottom: 5rem;
+  }
+
+  .tools-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .tool-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 0.6rem 1.1rem;
+    border-radius: 2px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .tool-chip::before { content: '▸'; color: var(--green); font-size: 0.65rem; }
+  .tool-chip:hover { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+
+  /* CONTACT SECTION */
+  .contact-section {
+    padding-top: 4rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .contact-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    text-decoration: none;
+    transition: border-color 0.2s, background 0.2s;
+    border-radius: 2px;
+  }
+  .contact-card:hover { border-color: var(--green); background: var(--green-glow); }
+  .contact-card:hover .contact-label { color: var(--green); }
+
+  .contact-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .contact-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+  }
+
+  .contact-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text);
+    transition: color 0.2s;
+  }
+
+  /* FAQ */
+  .faq-section {
+    padding-top: 4rem;
+    border-top: 1px solid var(--border);
+    margin-top: 5rem;
+  }
+
+  .faq-list { margin-top: 1.5rem; display: flex; flex-direction: column; }
+
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 0;
+  }
+  .faq-item:first-child { border-top: 1px solid var(--border); }
+
+  .faq-q {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #e8f0e9;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    user-select: none;
+  }
+
+  .faq-q::after {
+    content: '+';
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--green);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+
+  .faq-item.open .faq-q::after { transform: rotate(45deg); }
+
+  .faq-a {
+    font-size: 0.92rem;
+    color: var(--text-dim);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    padding-top: 0;
+  }
+
+  .faq-item.open .faq-a {
+    max-height: 300px;
+    padding-top: 0.5rem;
+  }
+
+  /* FOOTER */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 2rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .footer-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--green);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .footer-copy {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text-faint);
+  }
+
+  .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 700px) {
+    nav { padding: 0 1.2rem; }
+    .nav-links a { padding: 0.4rem 0.5rem; font-size: 0.75rem; }
+    .page-header { padding: 6rem 1.2rem 2.5rem; }
+    .page-body { padding: 3rem 1.2rem 4rem; }
+    .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+    .contact-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV — copy this into every page, never change it -->
+<nav>
+  <a class="nav-logo" href="index.html">Kelly <span>Modding Zone</span></a>
+  <ul class="nav-links">
+    <li><a href="tutorials/index.html">Tutorials</a></li>
+    <li><a href="blog/index.html">Blog</a></li>
+    <li><a href="about.html" class="active">About</a></li>
+  </ul>
+</nav>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="page-header-grid"></div>
+  <div class="page-header-glow"></div>
+  <div class="page-header-inner fade-in">
+    <div class="section-label">About</div>
+    <h1>Hi, I'm Kelly</h1>
+    <p class="page-desc">The person behind Kelly Modding Zone — making mods and tutorials for the Farming Simulator community.</p>
+  </div>
+</div>
+
+<div class="page-body">
+
+  <!-- ABOUT + CONTACT SIDE BY SIDE -->
+  <div class="about-grid fade-in">
+
+    <!-- ============================================
+      CHANGE THIS: Update with your own bio text
+    ============================================ -->
+    <div class="about-text">
+      <h2>About Me</h2>
+      <p>
+        I create <strong>Farming Simulator mods</strong> and beginner-friendly tutorials
+        that explain the modding process in a simple, easy-to-follow way.
+      </p>
+      <p>
+        My goal is to help new and experienced modders learn more, try new things,
+        and bring their ideas to life. Whether you're starting from zero or looking
+        to improve your skills, my tutorials are designed to be
+        <strong>clear, practical, and straight to the point</strong>.
+      </p>
+      <p>
+        I mainly work with <strong>Blender</strong>, <strong>Giants Editor</strong>,
+        and <strong>Onshape</strong> — and I share everything I learn along the way,
+        including the mistakes.
+      </p>
+      <p>
+        More tutorials and mod releases are added regularly, so check back often!
+      </p>
+    </div>
+
+    <!-- ============================================
+      CHANGE THIS: Update links with your real URLs
+    ============================================ -->
+    <div>
+      <h2>Get in Touch</h2>
+      <div class="contact-grid" style="grid-template-columns: 1fr;">
+
+        <a href="YOUR_DISCORD_LINK_HERE" target="_blank" class="contact-card">
+          <div class="contact-icon">💬</div>
+          <div>
+            <div class="contact-title">Community</div>
+            <div class="contact-label">Join the Discord Server</div>
+          </div>
+        </a>
+
+        <a href="mailto:YOUR_EMAIL_HERE" class="contact-card">
+          <div class="contact-icon">✉️</div>
+          <div>
+            <div class="contact-title">Email</div>
+            <div class="contact-label">Send me a message</div>
+          </div>
+        </a>
+
+        <a href="YOUR_MODHUB_LINK_HERE" target="_blank" class="contact-card">
+          <div class="contact-icon">🚜</div>
+          <div>
+            <div class="contact-title">Downloads</div>
+            <div class="contact-label">My Mods on ModHub</div>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLS I USE -->
+  <div class="tools-section fade-in">
+    <h2>Tools I Use</h2>
+    <p style="color:var(--text-dim); font-size:0.95rem; max-width:520px;">
+      My standard modding toolkit — every tutorial on this site is built around this workflow.
+    </p>
+    <!-- CHANGE THIS: Add or remove tools as needed -->
+    <div class="tools-row">
+      <div class="tool-chip">Blender</div>
+      <div class="tool-chip">Giants Editor</div>
+      <div class="tool-chip">Notepad++</div>
+      <div class="tool-chip">Onshape</div>
+      <div class="tool-chip">GIMP / Photoshop</div>
+      <div class="tool-chip">FS Mod Checker</div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="faq-section fade-in">
+    <h2>Frequently Asked Questions</h2>
+    <div class="faq-list">
+
+      <!-- ============================================
+        CHANGE THIS: Update questions and answers.
+        To add more, copy a full .faq-item block.
+      ============================================ -->
+
+      <div class="faq-item">
+        <div class="faq-q">Do I need any experience to follow your tutorials?</div>
+        <div class="faq-a">No experience needed at all! My tutorials are written for complete beginners. I explain every step and don't skip anything that might seem obvious.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Which version of Farming Simulator do your tutorials cover?</div>
+        <div class="faq-a">Most tutorials focus on Farming Simulator 25 (FS25), but the majority of the techniques also work in FS22. I'll always mention if something is version-specific.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Are your mods free to download?</div>
+        <div class="faq-a">Yes, all of my mods are completely free. You can find them on ModHub or linked directly from the blog release posts.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Can I use your mods in my videos or streams?</div>
+        <div class="faq-a">Of course! Feel free to use my mods in any videos or streams. A mention or link back is always appreciated but not required.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">I'm stuck on something — can you help?</div>
+        <div class="faq-a">Absolutely, jump into the Discord server and ask there — it's the best place to get help quickly. You can also send me an email if you prefer.</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER — copy this into every page, never change it -->
+<footer>
+  <div class="footer-logo">Kelly Modding Zone</div>
+  <div class="footer-copy">© 2025 Kelly Modding Zone</div>
+</footer>
+
+<script>
+  // Scroll fade-in
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+  // FAQ accordion
+  document.querySelectorAll('.faq-q').forEach(q => {
+    q.addEventListener('click', () => {
+      const item = q.parentElement;
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    });
+  });
+</script>
+</body>
+</html>
