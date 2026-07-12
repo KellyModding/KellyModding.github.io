@@ -466,6 +466,87 @@ h2 {
 .release-cta { margin-top: auto; display: flex; gap: 0.6rem; flex-wrap: wrap; }
 .release-cta .btn { padding: 0.55rem 1.1rem; font-size: 0.82rem; }
 
+/* ============================== MOD DETAIL PAGE ============================== */
+
+.mod-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  margin-top: 1rem;
+}
+
+.mod-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mod-status::before { content: '●'; font-size: 0.5rem; }
+.mod-status.released { color: var(--green); }
+.mod-status.testing { color: #ffcc44; }
+
+.mod-download-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 1.75rem 0 0.5rem; }
+
+.mod-section { max-width: 760px; margin: 3rem 0; }
+.mod-section > h2 { font-size: 1.4rem; }
+.mod-section > p { color: var(--text); font-size: 1rem; }
+
+.implement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-top: 1.5rem;
+}
+.implement-card { background: var(--card-bg); padding: 1.75rem; }
+.implement-name { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.15rem; color: #fff; margin-bottom: 1rem; }
+.spec-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.spec-row { display: flex; justify-content: space-between; font-size: 0.85rem; }
+.spec-label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+.spec-value { color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+
+.color-options { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1rem; }
+.color-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.7rem;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.color-chip .swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+.changelog-list { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.changelog-item {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  padding-left: 1.1rem;
+  position: relative;
+}
+.changelog-item::before { content: '▸'; color: var(--green); position: absolute; left: 0; font-size: 0.75rem; top: 0.2rem; }
+
+.lang-row { display: flex; gap: 0.4rem; margin-top: 0.75rem; }
+.lang-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+  padding: 0.15rem 0.5rem;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
 /* ============================== FOOTER ============================== */
 
 footer {
