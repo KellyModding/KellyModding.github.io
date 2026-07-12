@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What I've Been Working On — July 2026 | Kelly Modding Zone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<!-- NAV — copy this into every page, never change it -->
+<nav>
+  <a class="nav-logo" href="../index.html">Kelly <span>Modding Zone</span></a>
+  <ul class="nav-links">
+    <li><a href="../tutorials/index.html">Tutorials</a></li>
+    <li><a href="../blog/index.html" class="active">Blog</a></li>
+    <li><a href="../releases/index.html">Releases</a></li>
+    <li><a href="../about.html">About</a></li>
+  </ul>
+</nav>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="page-header-grid"></div>
+  <div class="page-header-glow"></div>
+  <div class="page-header-inner fade-in">
+    <div class="section-label">WIP / Projects</div>
+    <h1>What I've Been Working On — July 2026</h1>
+    <p class="page-desc">A rundown of everything currently in progress — some things close to done, some still messy in Blender, and one project that finally shipped.</p>
+  </div>
+</div>
+
+<!-- POST BODY -->
+<div class="page-body">
+  <a href="../blog/index.html" class="back-link fade-in">← Back to Blog</a>
+
+  <article class="post-body fade-in">
+    <div class="post-meta-row">
+      <span>July 2026</span>
+      <span>·</span>
+      <span>Kelly Modding</span>
+    </div>
+
+    <h2>Land Levellers Pack — released</h2>
+    <p>The Land Levellers Pack is out now for FS25, on both PC and console, with German and French translations included. This one's been the biggest release in a while and it's good to finally have it off the workbench and into people's hands. If you've grabbed it and run into anything, let me know.</p>
+
+    <h2>Petrol-Powered Pressure Washer</h2>
+    <p>This is the one eating most of my time at the moment. It started as a high-poly CAD mesh out of Onshape, which looked great but was completely unusable in-game — way too many tris for anything real-time. Rather than just running Decimate and calling it a day (which usually leaves you with ugly, uneven geometry), I've been manually retopologizing it in Blender to get clean, game-appropriate topology while keeping the shape accurate. Slower going, but the result is worth it. The Honda engine model I built a while back is slotting in as the power unit for this once the housing's done.</p>
+
+    <h2>JM Agri TR Bale Handler</h2>
+    <p>Also modeling a JM Agri TR bale handler at the moment, working off Euro/quick-hitch bracket references pulled from GrabCAD and a few existing FS25 mods to get the mounting geometry right. Still early, but the bracket and frame are taking shape.</p>
+
+    <h2>Also in the pipeline</h2>
+    <ul>
+      <li><strong>Bale storage pit</strong> — static decorative bale geometry paired with <code>objectStorage</code> for the actual storage logic. Mostly done, just tidying up collisions and re-texturing.</li>
+      <li><strong>Shed mod</strong> — in progress alongside everything else.</li>
+      <li><strong>Pajero jeep</strong> and a <strong>trailer pack</strong> — both moving forward in the background.</li>
+      <li><strong>McHale Fusion 2 baler</strong> — more of a stretch goal. The plan is a physical bale-count display on the machine itself, driven by a Lua specialization reading <code>balesMadeTotal</code> and mapping it to a UV atlas via <code>setShaderParameter</code>. Technically ambitious, so it's on the back burner until the current batch of mods is out the door.</li>
+    </ul>
+
+    <h2>Other bits</h2>
+    <p>Fixed an Euro Truck Simulator 2 crash that turned out to be a mod conflict in the Scania dealer tab, caused by a corrupted copy of Eugene's Scania NG mod — disabling it sorted it out. Also gave this site a proper pass: everything now runs off one shared stylesheet and script instead of repeating the same code on every page, and there's a new Releases page so all the finished mods are in one place instead of buried in blog posts.</p>
+
+    <p>That's the rundown for now — next update should have the pressure washer finished and the bale handler further along.</p>
+  </article>
+</div>
+
+<!-- FOOTER — copy this into every page, never change it -->
+<footer>
+  <div class="footer-logo">Kelly Modding Zone</div>
+  <div class="footer-copy">© 2025 Kelly Modding Zone</div>
+</footer>
+
+<script src="../script.js"></script>
+</body>
+</html>
