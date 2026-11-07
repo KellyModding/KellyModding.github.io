@@ -580,3 +580,18 @@ footer {
   .blog-post { grid-template-columns: 1fr; gap: 0.5rem; }
   .post-right { flex-direction: row; align-items: center; }
 }
+.calc-btn {
+  display: inline-block;
+  padding: 12px 22px;
+  border: 1px solid #5aff7e;
+  border-radius: 6px;
+  color: #5aff7e;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background .2s, color .2s;
+}
+.calc-btn:hover {
+  background: #5aff7e;
+  color: #0b0f0c;
+}
