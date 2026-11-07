@@ -24,6 +24,7 @@
   --c-fail: #d58ab0;
   --c-lab: #5ab8ff;
   --c-profit: #5aff7e;
+  --bad: #ff6b6b;
   --f-display: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
   --f-body: 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --f-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
@@ -116,6 +117,15 @@ details > summary:focus-visible { outline: 2px solid var(--focus); outline-offse
 details[open] > summary { margin-bottom: 12px; }
 details .body { display: flex; flex-direction: column; gap: 10px; }
 
+[hidden] { display: none !important; }
+.seg { display: inline-flex; align-self: flex-start; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg-btn { background: var(--panel-2); color: var(--muted); border: 0; border-radius: 0; padding: 9px 18px; font: 500 13px var(--f-mono); }
+.seg-btn:hover { color: var(--accent); }
+.seg-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); font-weight: 700; }
+.fail-out { display: flex; flex-direction: column; gap: 10px; }
+.stat .v.pos { color: var(--accent); }
+.stat .v.neg { color: var(--bad); }
+
 /* quote slip */
 .slip { position: sticky; top: 16px; border-top: 3px solid var(--accent); }
 .slip .kicker { font: 500 12px var(--f-mono); color: var(--accent); letter-spacing: .12em; text-transform: uppercase; }
@@ -173,21 +183,28 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
 
       <section class="card" aria-labelledby="h-print">
         <h2 id="h-print">The print</h2>
+        <div class="seg" role="group" aria-label="How do you want to enter the print?">
+          <button type="button" class="seg-btn" id="modePart" data-mode="part" aria-pressed="true">One part</button>
+          <button type="button" class="seg-btn" id="modePlate" data-mode="plate" aria-pressed="false">Whole plate</button>
+        </div>
         <div class="grid">
           <label class="field" style="grid-column: 1 / -1;"><span class="l">What is it?</span>
             <input class="plain" id="name" type="text" data-key="name" placeholder="Phone stand, keycaps, spare gear...">
           </label>
-          <label class="field"><span class="l">Print time, hours</span>
+          <label class="field"><span class="l" id="lblH">Print time, hours</span>
             <span class="inp"><input id="h" type="number" inputmode="decimal" min="0" step="1" placeholder="0" data-key="h"><span class="unit">h</span></span>
           </label>
-          <label class="field"><span class="l">Print time, minutes</span>
+          <label class="field"><span class="l" id="lblM">Print time, minutes</span>
             <span class="inp"><input id="m" type="number" inputmode="decimal" min="0" max="59" step="1" placeholder="0" data-key="m"><span class="unit">min</span></span>
           </label>
-          <label class="field"><span class="l">Copies</span>
+          <label class="field"><span class="l" id="lblQty">Copies</span>
             <span class="inp"><input id="qty" type="number" inputmode="numeric" min="1" step="1" data-key="qty"><span class="unit">×</span></span>
           </label>
+          <label class="field" id="fldPerPlate" hidden><span class="l">Parts on the plate</span>
+            <span class="inp"><input id="perPlate" type="number" inputmode="numeric" min="1" step="1" placeholder="same as ordered" data-key="perPlate"><span class="unit">parts</span></span>
+          </label>
         </div>
-        <p class="hint">Copy the time and filament weight from your slicer's estimate for one copy.</p>
+        <p class="hint" id="printHint">Copy the time and filament weight from your slicer's estimate for one copy.</p>
       </section>
 
       <section class="card" aria-labelledby="h-fil">
@@ -224,8 +241,11 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
       <section class="card" aria-labelledby="h-you">
         <h2 id="h-you">Your time and profit</h2>
         <div class="grid">
-          <label class="field"><span class="l">Hands-on time per copy</span>
+          <label class="field"><span class="l" id="lblLabour">Hands-on time per copy</span>
             <span class="inp"><input id="labourMins" type="number" inputmode="decimal" min="0" step="1" data-key="labourMins"><span class="unit">min</span></span>
+          </label>
+          <label class="field" id="fldFinish" hidden><span class="l">Finishing, per part</span>
+            <span class="inp"><input id="finishMins" type="number" inputmode="decimal" min="0" step="0.5" data-key="finishMins"><span class="unit">min</span></span>
           </label>
           <label class="field"><span class="l">Your hourly rate</span>
             <span class="inp"><input id="labourRate" type="number" inputmode="decimal" min="0" step="0.5" data-key="labourRate"><span class="unit cur">€</span></span>
@@ -242,7 +262,21 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
             </select>
           </label>
         </div>
-        <p class="hint">Hands-on time is slicing, loading, removing the print and cleaning it up. A 30% margin means 30% of the price you charge is profit.</p>
+        <p class="hint">Hands-on time is slicing, loading, removing the print and cleaning it up. A 30% margin means 30% of the price you charge is profit. In whole plate mode, finishing is the per-part time for removing supports and tidying each part.</p>
+      </section>
+
+      <section class="card" id="failCard" aria-labelledby="h-fail" hidden>
+        <h2 id="h-fail">If a plate fails</h2>
+        <div class="grid">
+          <label class="field"><span class="l">How far it got</span>
+            <span class="inp"><input id="failAt" type="number" inputmode="decimal" min="0" max="100" step="1" placeholder="e.g. 90" data-key="failAt"><span class="unit">% done</span></span>
+          </label>
+          <label class="field"><span class="l">Good parts you ended up with</span>
+            <span class="inp"><input id="goodParts" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g. 18" data-key="goodParts"><span class="unit">parts</span></span>
+          </label>
+        </div>
+        <div id="failOut" class="fail-out"></div>
+        <p class="hint">Uses the plate numbers above. It counts filament, power and wear up to the point of failure, plus your setup time and finishing for the good parts, then shows whether your normal price still covers it.</p>
       </section>
 
       <section class="card" aria-labelledby="h-pdf">
@@ -362,16 +396,17 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
       lines: [{ mat: 'pla-basic', g: '' }],
       rate: 0.32, watts: 110, printerPrice: 600, lifeHours: 4000, failPct: 5,
       labourMins: 10, labourRate: 12, marginPct: 30, roundTo: '0.5', cur: '€',
-      sender: 'Kelly Modding Zone', customer: '', note: ''
+      sender: 'Kelly Modding Zone', customer: '', note: '',
+      mode: 'part', finishMins: 1, perPlate: '', failAt: '', goodParts: ''
     };
   }
 
   /* Only these settings are remembered between visits. The print itself
      (name, time, filament weight, copies, customer, note) starts fresh every time. */
-  var SETTING_KEYS = ['materials', 'rate', 'watts', 'printerPrice', 'lifeHours', 'failPct', 'labourMins', 'labourRate', 'marginPct', 'roundTo', 'cur', 'sender'];
+  var SETTING_KEYS = ['materials', 'rate', 'watts', 'printerPrice', 'lifeHours', 'failPct', 'labourMins', 'labourRate', 'marginPct', 'roundTo', 'cur', 'sender', 'mode', 'finishMins'];
 
   function jobDefaults(materials) {
-    return { name: '', qty: 1, h: '', m: '', customer: '', note: '', lines: [{ mat: materials[0].id, g: '' }] };
+    return { name: '', qty: 1, h: '', m: '', customer: '', note: '', perPlate: '', failAt: '', goodParts: '', lines: [{ mat: materials[0].id, g: '' }] };
   }
 
   var S = defaults();
@@ -406,24 +441,53 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
     syncInputs(); renderLines(); calc();
   }
 
+  function roundUp(v, step) { return step > 0 ? Math.ceil(v / step - 1e-9) * step : v; }
+
+  /* One part mode: the print inputs describe one part and every figure is per part.
+     Whole plate mode: the print inputs describe one full plate. Costs for every plate needed
+     are added up, then shared across the parts ordered, so all figures stay per part. */
   function compute(s) {
-    var mats = s.lines.reduce(function (a, l) {
+    var plate = s.mode === 'plate';
+    var qty = Math.max(1, Math.round(num(s.qty)) || 1);
+    var perPlate = Math.max(1, Math.round(num(s.perPlate)) || qty);
+    var plates = plate ? Math.ceil(qty / perPlate) : 1;
+    var k = plate ? plates / qty : 1;
+    var matsU = s.lines.reduce(function (a, l) {
       var m = s.materials.find(function (x) { return x.id === l.mat; });
       return a + (m ? num(m.price) : 0) * num(l.g) / 1000;
     }, 0);
     var hours = num(s.h) + num(s.m) / 60;
-    var power = hours * num(s.watts) / 1000 * num(s.rate);
-    var wear = hours * (num(s.printerPrice) / Math.max(num(s.lifeHours), 1));
-    var fail = (mats + power + wear) * num(s.failPct) / 100;
-    var labour = num(s.labourMins) / 60 * num(s.labourRate);
+    var powerU = hours * num(s.watts) / 1000 * num(s.rate);
+    var wearU = hours * (num(s.printerPrice) / Math.max(num(s.lifeHours), 1));
+    var failU = (matsU + powerU + wearU) * num(s.failPct) / 100;
+    var setupU = num(s.labourMins) / 60 * num(s.labourRate);
+    var finishPer = plate ? num(s.finishMins) / 60 * num(s.labourRate) : 0;
+    var mats = matsU * k, power = powerU * k, wear = wearU * k, fail = failU * k;
+    var labour = setupU * k + finishPer;
     var cost = mats + power + wear + fail + labour;
     var mg = Math.min(num(s.marginPct), 90) / 100;
-    var rawPrice = cost / (1 - mg);
     var step = parseFloat(s.roundTo) || 0;
-    var price = step > 0 ? Math.ceil(rawPrice / step - 1e-9) * step : rawPrice;
+    var price = roundUp(cost / (1 - mg), step);
     var profit = price - cost;
-    var qty = Math.max(1, Math.round(num(s.qty)) || 1);
-    return { mats: mats, power: power, wear: wear, fail: fail, labour: labour, cost: cost, price: price, profit: profit, qty: qty, hours: hours };
+    return {
+      mats: mats, power: power, wear: wear, fail: fail, labour: labour, cost: cost, price: price, profit: profit,
+      qty: qty, hours: hours, hoursPP: hours * k,
+      plate: plate, plates: plates, perPlate: perPlate,
+      matsU: matsU, powerU: powerU, wearU: wearU, setupU: setupU, finishPer: finishPer, mg: mg, step: step
+    };
+  }
+
+  /* What a failed plate cost, and whether the normal price still covers it. */
+  function failedPlate(s, r) {
+    var at = parseFloat(s.failAt), gd = parseFloat(s.goodParts);
+    if (!isFinite(at) || !isFinite(gd)) return null;
+    var progress = Math.min(Math.max(at, 0), 100) / 100;
+    var good = Math.min(Math.max(Math.round(gd), 0), r.perPlate);
+    var spent = (r.matsU + r.powerU + r.wearU) * progress + r.setupU + good * r.finishPer;
+    var revenue = good * r.price;
+    var be = good > 0 ? spent / good : null;
+    var withMargin = good > 0 ? roundUp(be / (1 - r.mg), r.step) : null;
+    return { good: good, spent: spent, revenue: revenue, result: revenue - spent, be: be, withMargin: withMargin, missing: r.perPlate - good };
   }
 
   function fmt(v) {
@@ -501,8 +565,9 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
     y += titleLines.length * 5.5;
 
     var details = [];
-    if (mats) details.push('Filament: ' + mats + ' per copy');
-    if (r.hours > 0) details.push('Print time: about ' + hh + 'h ' + mm + 'm per copy');
+    if (mats) details.push('Filament: ' + mats + (r.plate ? ' per plate' : ' per copy'));
+    if (r.hours > 0) details.push('Print time: about ' + hh + 'h ' + mm + 'm ' + (r.plate ? 'per plate' : 'per copy'));
+    if (r.plate) details.push(r.perPlate + ' parts per plate' + (r.plates > 1 ? ', ' + r.plates + ' plates' : ''));
     if (details.length) {
       doc.setFontSize(9);
       doc.setTextColor(100, 110, 103);
@@ -574,7 +639,54 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
     ['Profit', 'profit', 'var(--c-profit)']
   ];
 
+  function applyMode() {
+    var plate = S.mode === 'plate';
+    var set = function (id, txt) { var el = $(id); if (el) el.textContent = txt; };
+    set('lblH', plate ? 'Plate print time, hours' : 'Print time, hours');
+    set('lblM', plate ? 'Plate print time, minutes' : 'Print time, minutes');
+    set('lblQty', plate ? 'Parts ordered' : 'Copies');
+    set('h-fil', plate ? 'Filament used, whole plate' : 'Filament used, per copy');
+    set('lblLabour', plate ? 'Setup and removal, per plate' : 'Hands-on time per copy');
+    set('printHint', plate
+      ? "Enter the time and filament weight from your slicer for one full plate of parts. If the order needs more than one plate, the costs are added up for you."
+      : "Copy the time and filament weight from your slicer's estimate for one copy.");
+    $('fldPerPlate').hidden = !plate;
+    $('fldFinish').hidden = !plate;
+    $('failCard').hidden = !plate;
+    $('modePart').setAttribute('aria-pressed', String(!plate));
+    $('modePlate').setAttribute('aria-pressed', String(plate));
+  }
+
+  function stat(k, v, cls) {
+    return '<div class="stat"><div class="k">' + esc(k) + '</div><div class="v' + (cls ? ' ' + cls : '') + '">' + esc(v) + '</div></div>';
+  }
+
+  function renderFail(r) {
+    if (!r.plate) return;
+    var f = failedPlate(S, r);
+    var box = $('failOut');
+    if (!f) {
+      box.innerHTML = '<p class="hint">Enter how far the print got and how many good parts you ended up with.</p>';
+      return;
+    }
+    var sign = f.result >= 0 ? '+' : '-';
+    var html = '<div class="stats">' +
+      stat('Spent on the failed run', fmt(f.spent)) +
+      stat('Good parts', f.good + ' of ' + r.perPlate) +
+      stat('Result at your normal price', sign + fmt(Math.abs(f.result)), f.result >= 0 ? 'pos' : 'neg') +
+      stat('Parts missing', String(f.missing)) +
+      stat('Break-even, each good part', f.be === null ? 'n/a' : fmt(f.be)) +
+      stat('With your margin, each', f.withMargin === null ? 'n/a' : fmt(f.withMargin)) +
+      '</div>';
+    var msg;
+    if (f.good === 0) msg = 'No good parts, so the whole run is a loss of ' + fmt(f.spent) + '.';
+    else if (f.result < 0) msg = 'At your normal price of ' + fmt(r.price) + ' each, this plate loses ' + fmt(-f.result) + '. Charging ' + fmt(f.withMargin) + ' each for the good parts would earn your margin back, or you can absorb the loss.';
+    else msg = 'Your normal price of ' + fmt(r.price) + ' each still covers this plate, with ' + fmt(f.result) + ' to spare.';
+    box.innerHTML = html + '<p class="take">' + esc(msg) + '</p>';
+  }
+
   function calc() {
+    applyMode();
     var r = compute(S);
     document.querySelectorAll('.cur').forEach(function (el) { el.textContent = S.cur; });
 
@@ -597,8 +709,9 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
       return '<li><span class="sw" style="background:' + s[2] + '"></span><span>' + esc(s[0]) + '</span><span class="amt">' + esc(fmt(v)) + '</span><span class="pc">' + pct.toFixed(0) + '%</span></li>';
     }).join('');
 
-    if (r.hours > 0) {
-      $('take').innerHTML = 'You take home <b>' + esc(fmt((r.labour + r.profit) / r.hours)) + '</b> per printing hour (your time plus profit).';
+    if (r.hoursPP > 0) {
+      $('take').innerHTML = 'You take home <b>' + esc(fmt((r.labour + r.profit) / r.hoursPP)) + '</b> per printing hour (your time plus profit).' +
+        (r.plate ? ' The order needs ' + r.plates + (r.plates === 1 ? ' plate.' : ' plates.') : '');
     } else {
       $('take').textContent = 'Enter a print time to see what you earn per printing hour.';
     }
@@ -606,10 +719,17 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
     var title = (S.name || '').trim() || '3D print';
     var hh = Math.floor(r.hours), mm = Math.round((r.hours - hh) * 60);
     var lines = ['3D print quote: ' + title];
-    if (r.hours > 0) lines.push('Print time: ' + hh + 'h ' + mm + 'm each');
-    lines.push('Price each: ' + fmt(r.price));
-    if (r.qty > 1) { lines.push('Copies: ' + r.qty); lines.push('Total: ' + fmt(r.price * r.qty)); }
+    if (r.plate) {
+      lines.push('Parts: ' + r.qty + (r.plates > 1 ? ' (' + r.plates + ' plates)' : ' (1 plate)'));
+      lines.push('Price each: ' + fmt(r.price));
+      lines.push('Total: ' + fmt(r.price * r.qty));
+    } else {
+      if (r.hours > 0) lines.push('Print time: ' + hh + 'h ' + mm + 'm each');
+      lines.push('Price each: ' + fmt(r.price));
+      if (r.qty > 1) { lines.push('Copies: ' + r.qty); lines.push('Total: ' + fmt(r.price * r.qty)); }
+    }
     $('quoteText').value = lines.join('\n');
+    renderFail(r);
   }
 
   document.addEventListener('input', function (e) {
@@ -653,6 +773,9 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
       S.materials.push({ id: 'm' + (uid++) + Date.now(), name: name, price: num($('newPrice').value) });
       $('newName').value = ''; $('newPrice').value = '';
       renderMats(); renderLines(); calc(); save();
+    } else if (b.dataset.mode) {
+      S.mode = b.dataset.mode === 'plate' ? 'plate' : 'part';
+      calc(); save();
     } else if (b.id === 'newBtn') {
       newQuote();
       window.scrollTo({ top: 0, behavior: 'smooth' });
