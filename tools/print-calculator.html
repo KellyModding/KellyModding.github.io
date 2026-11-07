@@ -310,7 +310,7 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
         <label class="field"><span class="l">Message to send</span>
           <textarea id="quoteText" rows="5" readonly></textarea>
         </label>
-        <button type="button" class="btn" id="pdfBtn">Save quote as PDF</button>
+        <button type="button" class="btn" id="pdfBtn">Open quote as PDF</button>
         <button type="button" class="ghost wide" id="copyBtn">Copy quote text</button>
       </section>
     </aside>
@@ -620,14 +620,22 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
       } catch (err) { t.focus(); t.select(); done('Press Ctrl+C to copy'); }
     } else if (b.id === 'pdfBtn') {
       var J = window.jspdf && window.jspdf.jsPDF;
-      var say = function (msg) { b.textContent = msg; setTimeout(function () { b.textContent = 'Save quote as PDF'; }, 2500); };
+      var say = function (msg) { b.textContent = msg; setTimeout(function () { b.textContent = 'Open quote as PDF'; }, 2500); };
       if (!J) { say('PDF tool did not load, check your connection'); return; }
+      var win = window.open('', '_blank');
       try {
         var pdf = buildPdf(J, S, compute(S));
-        var slug = ((S.name || '').trim() || 'print').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'print';
-        pdf.save('quote-' + slug + '.pdf');
-        say('Saved');
-      } catch (err) { say('Could not make the PDF'); }
+        var nm = (S.name || '').trim() || 'print';
+        var slug = nm.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'print';
+        pdf.setProperties({ title: 'Quote - ' + nm });
+        if (win) {
+          win.location.href = URL.createObjectURL(pdf.output('blob'));
+          say('Opened in a new tab');
+        } else {
+          pdf.save('quote-' + slug + '.pdf');
+          say('Pop-up blocked, saved instead');
+        }
+      } catch (err) { if (win) win.close(); say('Could not make the PDF'); }
     } else if (b.id === 'barBtn') {
       $('quote').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
