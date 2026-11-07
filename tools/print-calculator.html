@@ -245,6 +245,22 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
         <p class="hint">Hands-on time is slicing, loading, removing the print and cleaning it up. A 30% margin means 30% of the price you charge is profit.</p>
       </section>
 
+      <section class="card" aria-labelledby="h-pdf">
+        <h2 id="h-pdf">Quote details for the PDF</h2>
+        <div class="grid">
+          <label class="field"><span class="l">Prepared by</span>
+            <input class="plain" id="sender" type="text" data-key="sender" placeholder="Your name or business">
+          </label>
+          <label class="field"><span class="l">Quote for</span>
+            <input class="plain" id="customer" type="text" data-key="customer" placeholder="Your friend's name">
+          </label>
+          <label class="field" style="grid-column: 1 / -1;"><span class="l">Note on the quote (optional)</span>
+            <input class="plain" id="note" type="text" data-key="note" placeholder="e.g. Payment on collection">
+          </label>
+        </div>
+        <p class="hint">The PDF shows the item, quantity and price only. Your costs and profit are never included.</p>
+      </section>
+
       <section class="card">
         <details>
           <summary>Filament prices</summary>
@@ -294,7 +310,8 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
         <label class="field"><span class="l">Message to send</span>
           <textarea id="quoteText" rows="5" readonly></textarea>
         </label>
-        <button type="button" class="btn" id="copyBtn">Copy quote</button>
+        <button type="button" class="btn" id="pdfBtn">Save quote as PDF</button>
+        <button type="button" class="ghost wide" id="copyBtn">Copy quote text</button>
       </section>
     </aside>
   </div>
@@ -308,6 +325,7 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
   <button type="button" class="btn" id="barBtn">See breakdown</button>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function () {
   var KEY = 'print-quote-calculator-v1';
@@ -329,7 +347,8 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
       ],
       lines: [{ mat: 'pla', g: 42 }],
       rate: 0.32, watts: 110, printerPrice: 600, lifeHours: 4000, failPct: 5,
-      labourMins: 10, labourRate: 12, marginPct: 30, roundTo: '0.5', cur: '€'
+      labourMins: 10, labourRate: 12, marginPct: 30, roundTo: '0.5', cur: '€',
+      sender: 'Kelly Modding Zone', customer: '', note: ''
     };
   }
 
@@ -366,6 +385,114 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
 
   function fmt(v) {
     return S.cur + (isFinite(v) ? v : 0).toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function buildPdf(J, s, r) {
+    var doc = new J({ unit: 'mm', format: 'a4' });
+    var W = 210, M = 20, y = 24;
+    var code = { '€': 'EUR', '£': 'GBP', '$': 'USD' }[s.cur] || '';
+    var money = function (v) {
+      return (code ? code + ' ' : '') + (isFinite(v) ? v : 0).toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var now = new Date();
+    var qno = 'Q' + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '-' + pad(now.getHours()) + pad(now.getMinutes());
+    var dateStr = now.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' });
+    var title = (s.name || '').trim() || '3D print';
+    var mats = s.lines.map(function (l) {
+      var m = s.materials.find(function (x) { return x.id === l.mat; });
+      return num(l.g) > 0 && m ? m.name + ' ' + num(l.g) + ' g' : '';
+    }).filter(Boolean).join(', ');
+    var hh = Math.floor(r.hours), mm = Math.round((r.hours - hh) * 60);
+
+    doc.setFillColor(45, 204, 82);
+    doc.rect(0, 0, W, 6, 'F');
+
+    doc.setTextColor(20, 24, 21);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text((s.sender || '').trim() || 'Quote', M, y);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(100, 110, 103);
+    doc.text('3D PRINT QUOTE', W - M, y - 6, { align: 'right' });
+    doc.text(dateStr, W - M, y, { align: 'right' });
+    doc.text('Quote no. ' + qno, W - M, y + 5, { align: 'right' });
+
+    y += 20;
+    if ((s.customer || '').trim()) {
+      doc.setFontSize(9);
+      doc.setTextColor(100, 110, 103);
+      doc.text('PREPARED FOR', M, y);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(20, 24, 21);
+      doc.text(s.customer.trim(), M, y + 6);
+      doc.setFont('helvetica', 'normal');
+      y += 18;
+    }
+
+    var cQty = 128, cEach = 160, cTot = W - M;
+    doc.setFontSize(9);
+    doc.setTextColor(100, 110, 103);
+    doc.text('ITEM', M, y);
+    doc.text('QTY', cQty, y, { align: 'right' });
+    doc.text('PRICE EACH', cEach, y, { align: 'right' });
+    doc.text('TOTAL', cTot, y, { align: 'right' });
+    y += 3;
+    doc.setDrawColor(200, 206, 202);
+    doc.line(M, y, W - M, y);
+    y += 8;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(20, 24, 21);
+    var titleLines = doc.splitTextToSize(title, 85);
+    doc.text(titleLines, M, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text(String(r.qty), cQty, y, { align: 'right' });
+    doc.text(money(r.price), cEach, y, { align: 'right' });
+    doc.text(money(r.price * r.qty), cTot, y, { align: 'right' });
+    y += titleLines.length * 5.5;
+
+    var details = [];
+    if (mats) details.push('Filament: ' + mats + ' per copy');
+    if (r.hours > 0) details.push('Print time: about ' + hh + 'h ' + mm + 'm per copy');
+    if (details.length) {
+      doc.setFontSize(9);
+      doc.setTextColor(100, 110, 103);
+      var dl = doc.splitTextToSize(details.join('\n'), 95);
+      doc.text(dl, M, y);
+      y += dl.length * 4.5;
+    }
+
+    y += 4;
+    doc.line(M, y, W - M, y);
+    y += 12;
+    var totalText = money(r.price * r.qty);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    var totalW = doc.getTextWidth(totalText);
+    doc.setTextColor(20, 24, 21);
+    doc.text(totalText, cTot, y + 1, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(100, 110, 103);
+    doc.text('Total', cTot - totalW - 6, y + 1, { align: 'right' });
+    y += 18;
+
+    if ((s.note || '').trim()) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100, 110, 103);
+      doc.text('NOTES', M, y);
+      doc.setFontSize(11);
+      doc.setTextColor(20, 24, 21);
+      doc.text(doc.splitTextToSize(s.note.trim(), W - 2 * M), M, y + 6);
+    }
+    return doc;
   }
 
   function syncInputs() {
@@ -487,10 +614,20 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
       S = defaults(); syncInputs(); renderLines(); renderMats(); calc(); save();
     } else if (b.id === 'copyBtn') {
       var t = $('quoteText');
-      var done = function (msg) { b.textContent = msg; setTimeout(function () { b.textContent = 'Copy quote'; }, 1800); };
+      var done = function (msg) { b.textContent = msg; setTimeout(function () { b.textContent = 'Copy quote text'; }, 1800); };
       try {
         navigator.clipboard.writeText(t.value).then(function () { done('Copied'); }, function () { t.focus(); t.select(); done('Press Ctrl+C to copy'); });
       } catch (err) { t.focus(); t.select(); done('Press Ctrl+C to copy'); }
+    } else if (b.id === 'pdfBtn') {
+      var J = window.jspdf && window.jspdf.jsPDF;
+      var say = function (msg) { b.textContent = msg; setTimeout(function () { b.textContent = 'Save quote as PDF'; }, 2500); };
+      if (!J) { say('PDF tool did not load, check your connection'); return; }
+      try {
+        var pdf = buildPdf(J, S, compute(S));
+        var slug = ((S.name || '').trim() || 'print').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'print';
+        pdf.save('quote-' + slug + '.pdf');
+        say('Saved');
+      } catch (err) { say('Could not make the PDF'); }
     } else if (b.id === 'barBtn') {
       $('quote').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
