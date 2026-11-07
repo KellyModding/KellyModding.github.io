@@ -122,6 +122,7 @@ details .body { display: flex; flex-direction: column; gap: 10px; }
 .seg-btn { background: var(--panel-2); color: var(--muted); border: 0; border-radius: 0; padding: 9px 18px; font: 500 13px var(--f-mono); }
 .seg-btn:hover { color: var(--accent); }
 .seg-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); font-weight: 700; }
+.hint.warn { color: var(--c-pow); }
 .fail-out { display: flex; flex-direction: column; gap: 10px; }
 .stat .v.pos { color: var(--accent); }
 .stat .v.neg { color: var(--bad); }
@@ -205,6 +206,7 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
           </label>
         </div>
         <p class="hint" id="printHint">Copy the time and filament weight from your slicer's estimate for one copy.</p>
+        <p class="hint warn" id="plateWarn" hidden></p>
       </section>
 
       <section class="card" aria-labelledby="h-fil">
@@ -268,15 +270,15 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
       <section class="card" id="failCard" aria-labelledby="h-fail" hidden>
         <h2 id="h-fail">If a plate fails</h2>
         <div class="grid">
-          <label class="field"><span class="l">How far it got</span>
+          <label class="field"><span class="l">How far the failed plate got</span>
             <span class="inp"><input id="failAt" type="number" inputmode="decimal" min="0" max="100" step="1" placeholder="e.g. 90" data-key="failAt"><span class="unit">% done</span></span>
           </label>
-          <label class="field"><span class="l">Good parts you ended up with</span>
+          <label class="field"><span class="l">Good parts from the failed plate</span>
             <span class="inp"><input id="goodParts" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g. 18" data-key="goodParts"><span class="unit">parts</span></span>
           </label>
         </div>
         <div id="failOut" class="fail-out"></div>
-        <p class="hint">Uses the plate numbers above. It counts filament, power and wear up to the point of failure, plus your setup time and finishing for the good parts, then shows whether your normal price still covers it.</p>
+        <p class="hint">Looks at the whole order. It assumes one plate fails and any other plates come out fine. It counts the full cost of the good plates, filament, power and wear on the failed plate up to the point it stopped, your setup time and finishing for the good parts, then shows what you are left with and what reprinting the missing parts would do.</p>
       </section>
 
       <section class="card" aria-labelledby="h-pdf">
@@ -477,22 +479,31 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
     };
   }
 
-  /* What a failed plate cost, and whether the normal price still covers it. */
+  /* What a failed plate does to the whole order. One plate fails; any other plates are assumed to come out fine. */
   function failedPlate(s, r) {
     var at = parseFloat(s.failAt), gd = parseFloat(s.goodParts);
     if (!isFinite(at) || !isFinite(gd)) return null;
     var progress = Math.min(Math.max(at, 0), 100) / 100;
-    var good = Math.min(Math.max(Math.round(gd), 0), r.perPlate);
-    var spent = (r.matsU + r.powerU + r.wearU) * progress + r.setupU + good * r.finishPer;
-    /* You can only bill for parts that were ordered, even if the plate held more. */
-    var billable = Math.min(good, r.qty);
+    var goodFailed = Math.min(Math.max(Math.round(gd), 0), r.perPlate);
+    var running = r.matsU + r.powerU + r.wearU;
+    var fullPlate = running + r.setupU;
+    var okPlates = r.plates - 1;
+    var okParts = Math.min(r.qty, okPlates * r.perPlate);
+    var totalGood = okParts + goodFailed;
+    /* You can only bill for parts that were ordered. */
+    var billable = Math.min(totalGood, r.qty);
+    var missing = r.qty - billable;
+    var spent = okPlates * fullPlate + running * progress + r.setupU + totalGood * r.finishPer;
     var revenue = billable * r.price;
+    var result = revenue - spent;
     var be = billable > 0 ? spent / billable : null;
     var withMargin = billable > 0 ? roundUp(be / (1 - r.mg), r.step) : null;
-    /* What the plate would have earned if nothing had failed. */
-    var planned = Math.min(r.perPlate, r.qty);
-    var plannedProfit = planned * r.price - ((r.matsU + r.powerU + r.wearU) + r.setupU + planned * r.finishPer);
-    return { good: good, billable: billable, spent: spent, revenue: revenue, result: revenue - spent, plannedProfit: plannedProfit, be: be, withMargin: withMargin, missing: r.perPlate - good };
+    /* What the order would have earned if nothing had failed. */
+    var plannedProfit = r.qty * r.price - (r.plates * fullPlate + r.qty * r.finishPer);
+    /* Reprinting the missing parts, counted as one more full plate. */
+    var reprintCost = missing > 0 ? fullPlate + missing * r.finishPer : 0;
+    var afterReprint = r.qty * r.price - (spent + reprintCost);
+    return { goodFailed: goodFailed, totalGood: totalGood, billable: billable, missing: missing, spent: spent, revenue: revenue, result: result, be: be, withMargin: withMargin, plannedProfit: plannedProfit, reprintCost: reprintCost, afterReprint: afterReprint };
   }
 
   function fmt(v) {
@@ -671,23 +682,31 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
     var f = failedPlate(S, r);
     var box = $('failOut');
     if (!f) {
-      box.innerHTML = '<p class="hint">Enter how far the print got and how many good parts you ended up with.</p>';
+      box.innerHTML = '<p class="hint">Enter how far the failed plate got and how many good parts it gave you.</p>';
       return;
     }
-    var sign = f.result >= 0 ? '+' : '-';
+    var signed = function (v) { return (v >= 0 ? '+' : '-') + fmt(Math.abs(v)); };
     var html = '<div class="stats">' +
-      stat('Spent on this plate', fmt(f.spent)) +
-      stat('Good parts', f.good + ' of ' + r.perPlate) +
+      stat('Spent so far', fmt(f.spent)) +
+      stat('Good parts', f.billable + ' of ' + r.qty) +
+      stat('Parts still owed', String(f.missing)) +
       stat('Profit if nothing had failed', fmt(f.plannedProfit)) +
-      stat('Profit with this failure', sign + fmt(Math.abs(f.result)), f.result >= 0 ? 'pos' : 'neg') +
+      stat('Profit if you bill only the good parts', signed(f.result), f.result >= 0 ? 'pos' : 'neg') +
+      stat('Profit after reprinting the missing parts', f.missing > 0 ? signed(f.afterReprint) : 'Not needed', f.missing > 0 ? (f.afterReprint >= 0 ? 'pos' : 'neg') : '') +
       stat('Break-even, each good part', f.be === null ? 'n/a' : fmt(f.be)) +
       stat('With your margin, each', f.withMargin === null ? 'n/a' : fmt(f.withMargin)) +
       '</div>';
-    var msg;
-    if (f.billable === 0) msg = 'No parts to bill, so the whole run is a loss of ' + fmt(f.spent) + '.';
-    else if (f.result < 0) msg = 'Billing ' + f.billable + ' good ' + (f.billable === 1 ? 'part' : 'parts') + ' at your normal ' + fmt(r.price) + ' each, this plate loses ' + fmt(-f.result) + '. Charging ' + fmt(f.withMargin) + ' each would earn your margin back, or you can absorb the loss.';
-    else msg = 'Billing ' + f.billable + ' good ' + (f.billable === 1 ? 'part' : 'parts') + ' at your normal ' + fmt(r.price) + ' each, you still make ' + fmt(f.result) + ' on this plate. The failure cost you ' + fmt(Math.max(f.plannedProfit - f.result, 0)) + ' compared with a plate that worked.';
-    if (r.qty < r.perPlate) msg += ' Only ' + r.qty + ' parts were ordered, so only those can be billed.';
+    var msg = r.plates > 1
+      ? 'One of the ' + r.plates + ' plates fails and the other ' + (r.plates - 1) + (r.plates === 2 ? ' comes' : ' come') + ' out fine. '
+      : 'The plate fails. ';
+    msg += 'You end up with ' + f.billable + ' of ' + r.qty + ' ordered parts. ';
+    if (f.billable === 0) {
+      msg += 'There is nothing to bill, so the run is a loss of ' + fmt(f.spent) + '.';
+    } else if (f.missing > 0) {
+      msg += 'Billing only those at ' + fmt(r.price) + ' each gives ' + signed(f.result) + '. Charging ' + fmt(f.withMargin) + ' each would earn your margin back. Reprinting the ' + f.missing + ' missing ' + (f.missing === 1 ? 'part' : 'parts') + ', counted as a full plate, finishes the order for ' + signed(f.afterReprint) + ' profit.';
+    } else {
+      msg += 'The order is still complete and the profit is ' + signed(f.result) + ', which is ' + fmt(Math.max(f.plannedProfit - f.result, 0)) + ' less than if nothing had failed.';
+    }
     box.innerHTML = html + '<p class="take">' + esc(msg) + '</p>';
   }
 
@@ -695,6 +714,19 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
     applyMode();
     var r = compute(S);
     document.querySelectorAll('.cur').forEach(function (el) { el.textContent = S.cur; });
+
+    var warn = $('plateWarn');
+    var pp = Math.round(num(S.perPlate));
+    if (r.plate && pp > r.qty) {
+      warn.hidden = false;
+      warn.textContent = 'You ordered ' + r.qty + (r.qty === 1 ? ' part' : ' parts') + ' but entered ' + pp + ' on the plate, so the cost of the whole plate is charged to ' + (r.qty === 1 ? 'that one part' : 'those ' + r.qty + ' parts') + '. If you are printing a full plate, set Parts ordered to match. If you only print ' + r.qty + ', enter the time and filament for just those.';
+    } else if (r.plate && pp > 0 && r.qty > pp) {
+      warn.hidden = false;
+      warn.textContent = r.qty + ' parts will not fit on one plate of ' + pp + ', so the order needs ' + r.plates + ' plates. The time and filament above are counted once for each plate, so enter them for one full plate of ' + pp + '.' +
+        (r.qty % pp !== 0 ? ' The last plate only has ' + (r.qty % pp) + (r.qty % pp === 1 ? ' part' : ' parts') + ' but is counted as a full plate.' : '');
+    } else {
+      warn.hidden = true;
+    }
 
     var total = r.price * r.qty;
     $('outPrice').innerHTML = esc(fmt(total)) + '<small>' + (r.qty > 1 ? 'total for ' + r.qty + (r.plate ? ' parts' : ' copies') : 'total') + '</small>';
