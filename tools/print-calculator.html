@@ -332,10 +332,10 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
         <div class="kicker">Quote</div>
         <div class="price" id="outPrice">0.00</div>
         <div class="stats">
-          <div class="stat"><div class="k">Your cost, each</div><div class="v" id="outCost">0.00</div></div>
-          <div class="stat"><div class="k">Profit, each</div><div class="v" id="outProfit">0.00</div></div>
-          <div class="stat"><div class="k">Total for order</div><div class="v" id="outTotal">0.00</div></div>
-          <div class="stat"><div class="k">Total profit</div><div class="v" id="outTotalProfit">0.00</div></div>
+          <div class="stat"><div class="k">Price each</div><div class="v" id="outTotal">0.00</div></div>
+          <div class="stat"><div class="k">Profit each</div><div class="v" id="outTotalProfit">0.00</div></div>
+          <div class="stat"><div class="k">Your cost, total</div><div class="v" id="outCost">0.00</div></div>
+          <div class="stat"><div class="k">Profit, total</div><div class="v" id="outProfit">0.00</div></div>
         </div>
         <div>
           <div class="stack" id="stack" role="img" aria-label="Share of the price by cost type"></div>
@@ -484,10 +484,15 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
     var progress = Math.min(Math.max(at, 0), 100) / 100;
     var good = Math.min(Math.max(Math.round(gd), 0), r.perPlate);
     var spent = (r.matsU + r.powerU + r.wearU) * progress + r.setupU + good * r.finishPer;
-    var revenue = good * r.price;
-    var be = good > 0 ? spent / good : null;
-    var withMargin = good > 0 ? roundUp(be / (1 - r.mg), r.step) : null;
-    return { good: good, spent: spent, revenue: revenue, result: revenue - spent, be: be, withMargin: withMargin, missing: r.perPlate - good };
+    /* You can only bill for parts that were ordered, even if the plate held more. */
+    var billable = Math.min(good, r.qty);
+    var revenue = billable * r.price;
+    var be = billable > 0 ? spent / billable : null;
+    var withMargin = billable > 0 ? roundUp(be / (1 - r.mg), r.step) : null;
+    /* What the plate would have earned if nothing had failed. */
+    var planned = Math.min(r.perPlate, r.qty);
+    var plannedProfit = planned * r.price - ((r.matsU + r.powerU + r.wearU) + r.setupU + planned * r.finishPer);
+    return { good: good, billable: billable, spent: spent, revenue: revenue, result: revenue - spent, plannedProfit: plannedProfit, be: be, withMargin: withMargin, missing: r.perPlate - good };
   }
 
   function fmt(v) {
@@ -671,17 +676,18 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
     }
     var sign = f.result >= 0 ? '+' : '-';
     var html = '<div class="stats">' +
-      stat('Spent on the failed run', fmt(f.spent)) +
+      stat('Spent on this plate', fmt(f.spent)) +
       stat('Good parts', f.good + ' of ' + r.perPlate) +
-      stat('Result at your normal price', sign + fmt(Math.abs(f.result)), f.result >= 0 ? 'pos' : 'neg') +
-      stat('Parts missing', String(f.missing)) +
+      stat('Profit if nothing had failed', fmt(f.plannedProfit)) +
+      stat('Profit with this failure', sign + fmt(Math.abs(f.result)), f.result >= 0 ? 'pos' : 'neg') +
       stat('Break-even, each good part', f.be === null ? 'n/a' : fmt(f.be)) +
       stat('With your margin, each', f.withMargin === null ? 'n/a' : fmt(f.withMargin)) +
       '</div>';
     var msg;
-    if (f.good === 0) msg = 'No good parts, so the whole run is a loss of ' + fmt(f.spent) + '.';
-    else if (f.result < 0) msg = 'At your normal price of ' + fmt(r.price) + ' each, this plate loses ' + fmt(-f.result) + '. Charging ' + fmt(f.withMargin) + ' each for the good parts would earn your margin back, or you can absorb the loss.';
-    else msg = 'Your normal price of ' + fmt(r.price) + ' each still covers this plate, with ' + fmt(f.result) + ' to spare.';
+    if (f.billable === 0) msg = 'No parts to bill, so the whole run is a loss of ' + fmt(f.spent) + '.';
+    else if (f.result < 0) msg = 'Billing ' + f.billable + ' good ' + (f.billable === 1 ? 'part' : 'parts') + ' at your normal ' + fmt(r.price) + ' each, this plate loses ' + fmt(-f.result) + '. Charging ' + fmt(f.withMargin) + ' each would earn your margin back, or you can absorb the loss.';
+    else msg = 'Billing ' + f.billable + ' good ' + (f.billable === 1 ? 'part' : 'parts') + ' at your normal ' + fmt(r.price) + ' each, you still make ' + fmt(f.result) + ' on this plate. The failure cost you ' + fmt(Math.max(f.plannedProfit - f.result, 0)) + ' compared with a plate that worked.';
+    if (r.qty < r.perPlate) msg += ' Only ' + r.qty + ' parts were ordered, so only those can be billed.';
     box.innerHTML = html + '<p class="take">' + esc(msg) + '</p>';
   }
 
@@ -690,13 +696,14 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
     var r = compute(S);
     document.querySelectorAll('.cur').forEach(function (el) { el.textContent = S.cur; });
 
-    $('outPrice').innerHTML = esc(fmt(r.price)) + '<small>each</small>';
-    $('outCost').textContent = fmt(r.cost);
-    $('outProfit').textContent = fmt(r.profit);
-    $('outTotal').textContent = fmt(r.price * r.qty);
-    $('outTotalProfit').textContent = fmt(r.profit * r.qty);
-    $('barPrice').textContent = fmt(r.price);
-    $('barSub').textContent = r.qty > 1 ? 'each, ' + fmt(r.price * r.qty) + ' for ' + r.qty : 'each';
+    var total = r.price * r.qty;
+    $('outPrice').innerHTML = esc(fmt(total)) + '<small>' + (r.qty > 1 ? 'total for ' + r.qty + (r.plate ? ' parts' : ' copies') : 'total') + '</small>';
+    $('outTotal').textContent = fmt(r.price);
+    $('outTotalProfit').textContent = fmt(r.profit);
+    $('outCost').textContent = fmt(r.cost * r.qty);
+    $('outProfit').textContent = fmt(r.profit * r.qty);
+    $('barPrice').textContent = fmt(total);
+    $('barSub').textContent = r.qty > 1 ? fmt(r.price) + ' each, ' + r.qty + (r.plate ? ' parts' : ' copies') : 'total';
 
     $('stack').innerHTML = SEG.map(function (s) {
       var pct = r.price > 0 ? Math.max(r[s[1]], 0) / r.price * 100 : 0;
@@ -706,7 +713,7 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
     $('breakdown').innerHTML = SEG.map(function (s) {
       var v = r[s[1]];
       var pct = r.price > 0 ? v / r.price * 100 : 0;
-      return '<li><span class="sw" style="background:' + s[2] + '"></span><span>' + esc(s[0]) + '</span><span class="amt">' + esc(fmt(v)) + '</span><span class="pc">' + pct.toFixed(0) + '%</span></li>';
+      return '<li><span class="sw" style="background:' + s[2] + '"></span><span>' + esc(s[0]) + '</span><span class="amt">' + esc(fmt(v * r.qty)) + '</span><span class="pc">' + pct.toFixed(0) + '%</span></li>';
     }).join('');
 
     if (r.hoursPP > 0) {
