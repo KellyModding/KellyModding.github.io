@@ -329,7 +329,7 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function () {
-  var KEY = 'print-quote-calculator-v1';
+  var KEY = 'print-quote-calculator-v2';
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var num = function (v) { var n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; };
